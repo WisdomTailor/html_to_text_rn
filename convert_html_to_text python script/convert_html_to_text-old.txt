@@ -1,0 +1,70 @@
+import logging
+import subprocess
+from bs4 import BeautifulSoup
+
+# Configure logging to include time, logging level, and message
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+)
+
+
+def convert_html_to_text(html_file, txt_file):
+    """
+    Converts the content of an HTML file to plain text and saves it in a text file.
+
+    :param html_file: Path to the input HTML file.
+    :param txt_file: Path to the output text file where plain text will be saved.
+    """
+    try:
+        # Read the HTML file content
+        with open(html_file, "r", encoding="utf-8") as file:
+            html_content = file.read()
+
+        # Parse the HTML content using BeautifulSoup
+        soup = BeautifulSoup(html_content, "html.parser")
+
+        # Extract text from the parsed HTML
+        text = soup.get_text()
+
+        # Save the extracted text to a text file
+        with open(txt_file, "w", encoding="utf-8") as file:
+            file.write(text)
+
+        logging.info("Converted %s to %s", html_file, txt_file)
+
+    except FileNotFoundError as ex:
+        logging.error("File not found: %s", ex)
+
+    except OSError as e:
+        logging.error("File operation failed: %s", e)
+        # Try converting with html2text command-line utility as fallback
+        try:
+            process = subprocess.Popen(
+                ["html2text", html_file], stdout=subprocess.PIPE, stderr=subprocess.PIPE
+            )
+            stdout_data, stderr_data = process.communicate()
+
+            if process.returncode == 0:
+                with open(txt_file, "w", encoding="utf-8") as f:
+                    f.write(stdout_data.decode("utf-8"))
+                logging.info(
+                    "Successfully converted %s to %s using html2text",
+                    html_file,
+                    txt_file,
+                )
+            else:
+                logging.error(
+                    "html2text failed to convert %s: %s",
+                    html_file,
+                    stderr_data.decode("utf-8"),
+                )
+
+        except subprocess.CalledProcessError as subprocess_error:
+            logging.error("html2text command failed with %s", subprocess_error)
+
+        except Exception as general_error:
+            logging.error("An unexpected error occurred: %s", general_error)
+
+
+# Instructions to install BeautifulSoup if it is not already installed
+# pip install beautifulsoup4

@@ -1,0 +1,58 @@
+"""
+This module provides a function to convert HTML content to plain text using BeautifulSoup.
+The conversion is attempted first through BeautifulSoup. If that fails, the module then
+tries to use an external command-line tool called 'html2text' as a fallback.
+Make sure 'beautifulsoup4' is installed (via pip), and 'html2text' is available in the system PATH.
+"""
+
+import logging
+import subprocess
+from bs4 import BeautifulSoup
+
+# Configure logging to include time, logging level, and message
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+)
+
+
+def convert_html_to_text(html_file, txt_file):
+    """
+    Converts the content of an HTML file to plain text and saves it in a text file.
+
+    :param html_file: Path to the input HTML file.
+    :param txt_file: Path to the output text file where plain text will be saved.
+    """
+    try:
+        # Read the HTML file content
+        with open(html_file, "r", encoding="utf-8") as file:
+            html_content = file.read()
+
+        # Parse the HTML content and extract text
+        soup = BeautifulSoup(html_content, "html.parser")
+        text_content = soup.get_text()
+
+        # Write the extracted text to a text file
+        with open(txt_file, "w", encoding="utf-8") as file:
+            file.write(text_content)
+
+        logging.info("Converted %s to %s", html_file, txt_file)
+    except OSError as e:
+        logging.error("File operation failed: %s", e)
+
+        # Attempt to use the html2text command-line program if available
+        with subprocess.Popen(
+            ["html2text", html_file], stdout=subprocess.PIPE, stderr=subprocess.PIPE
+        ) as process:
+            stdout_data, stderr_data = process.communicate()
+            if process.returncode == 0:
+                with open(txt_file, "w", encoding="utf-8") as f:
+                    f.write(stdout_data.decode("utf-8"))
+    except OSError as ex:
+        logging.error("OS error occurred: %s", ex)
+    except FileNotFoundError as ex:
+        logging.error("File not found: %s", ex)
+
+    # Any cleanup code that should always be executed can go here
+    # This block will always be executed, regardless of whether an exception was raised or not
+    # Remove the placeholder and replace with actual cleanup code as required
+    # If no cleanup is necessary, you can remove this entire block
